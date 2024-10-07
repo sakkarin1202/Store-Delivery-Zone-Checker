@@ -16,8 +16,6 @@ app.get("/api/stores",(req,res)=>{
   res.json(stores)
 })
 
-
-
 app.get("/", (req, res) => {
   res.send("<h1>Welcom to API For Store Delivery Zone Checker</h1>");
 });
