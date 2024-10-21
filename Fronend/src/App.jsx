@@ -8,21 +8,21 @@ import {
   Circle,
 } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
-import axios from "axios";
 import L from "leaflet";
 import Swal from "sweetalert2";
-const base_url = import.meta.env.VITE_API_BASE_URL;
+import StoreService from "../services/store.service"; 
 import Seven from "./assets/24.png";
 import Seven2 from "./assets/24close.png";
 import "./App.css";
+import {useAuthContext } from "../context/AuthContext"
 
 function App() {
   const center = [13.838514948417762, 100.02530203017818];
   const [stores, setStores] = useState([]);
-  const [myLocation, setMyLocation] = useState({ lat: "", lng: "" });
+  const [myLocation, setMyLocation] = useState({ latitude: "", longitude: "" });
   const [deliveryZone, setDeliveryZone] = useState({
-    lat: "",
-    lng: "",
+    latitude: "",
+    longitude: "",
     radius: 1000,
   });
   const [activeStore, setActiveStore] = useState(null);
@@ -48,7 +48,7 @@ function App() {
   useEffect(() => {
     const fetchStores = async () => {
       try {
-        const response = await axios.get(base_url + "/api/stores");
+        const response = await StoreService.getAllStores();
         if (response.status === 200) {
           setStores(response.data);
         }
@@ -56,6 +56,7 @@ function App() {
         console.error("Error fetching the stores:", error);
       }
     };
+
     fetchStores();
   }, []);
 
@@ -63,7 +64,7 @@ function App() {
     useMapEvents({
       click(e) {
         const { lat, lng } = e.latlng;
-        setMyLocation({ lat, lng });
+        setMyLocation({ latitude: lat, longitude: lng });
         console.log("Clicked at latitude: " + lat + " longitude: " + lng);
       },
     });
@@ -72,14 +73,14 @@ function App() {
   const handleGetLocation = () => {
     navigator.geolocation.getCurrentPosition((position) => {
       setMyLocation({
-        lat: position.coords.latitude,
-        lng: position.coords.longitude,
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
       });
     });
   };
 
   const handleLocationCheck = () => {
-    if (!myLocation.lat || !myLocation.lng) {
+    if (!myLocation.latitude || !myLocation.longitude) {
       Swal.fire({
         title: "Error",
         text: "Please enter your valid location",
@@ -91,10 +92,10 @@ function App() {
 
     if (activeStore) {
       const distance = calculateDistance(
-        myLocation.lat,
-        myLocation.lng,
-        activeStore.lat,
-        activeStore.lng
+        myLocation.latitude,
+        myLocation.longitude,
+        activeStore.latitude,
+        activeStore.longitude
       );
 
       if (distance <= deliveryZone.radius) {
@@ -130,6 +131,28 @@ function App() {
     }
   };
 
+  const handleDelete = (store) => {
+    Swal.fire({
+      title: "Are you sure?",
+      text: "You won't be able to revert this!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#3085d6",
+      cancelButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await StoreService.deleteStore(store.id); // Assuming deleteStore is defined in StoreService
+          setStores((prevStores) => prevStores.filter((s) => s.id !== store.id));
+          Swal.fire("Deleted!", "The store has been deleted.", "success");
+        } catch (error) {
+          Swal.fire("Error!", "There was a problem deleting the store.", "error");
+        }
+      }
+    });
+  };
+
   const inDeliveryZoneIcon = L.icon({
     iconUrl: Seven,
     iconSize: [35, 35],
@@ -139,6 +162,18 @@ function App() {
     iconUrl: Seven2,
     iconSize: [35, 35],
   });
+
+  const { logout } = useAuthContext();
+  const handleLogout = () => {
+    logout();
+    Swal.fire({
+      title: "Logout Success",
+      text: "You have successfully logged out.",
+      icon: "success",
+      confirmButtonText: "OK",
+    });
+    //navigate("/"); // Uncomment this line if you want to redirect after logout
+  };
 
   return (
     <>
@@ -156,11 +191,17 @@ function App() {
         >
           Check Delivery Availability
         </button>
+        <button
+          className="btn btn-primary bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 text-white hover:scale-105 transition-transform duration-300"
+
+        >
+          <a onClick={handleLogout}>Logout</a>
+        </button>
 
         <div className="mapContainer">
           <MapContainer
             center={center}
-            zoom={10}
+            zoom={16}
             style={{ height: "75vh", width: "100vw" }}
             scrollWheelZoom={false}
           >
@@ -168,9 +209,9 @@ function App() {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            {myLocation.lat && myLocation.lng && (
+            {myLocation.latitude && myLocation.longitude && (
               <Marker
-                position={[myLocation.lat, myLocation.lng]}
+                position={[myLocation.latitude, myLocation.longitude]}
                 icon={L.icon({
                   iconUrl:
                     "https://cdn-icons-png.flaticon.com/128/6924/6924565.png",
@@ -182,16 +223,16 @@ function App() {
             )}
             {stores.map((store) => {
               const distance = calculateDistance(
-                myLocation.lat,
-                myLocation.lng,
-                store.lat,
-                store.lng
+                myLocation.latitude,
+                myLocation.longitude,
+                store.latitude,
+                store.longitude
               );
               const isInDeliveryZone = distance <= deliveryZone.radius;
 
               return (
                 <Marker
-                  position={[store.lat, store.lng]}
+                  position={[store.latitude, store.longitude]}
                   key={store.id}
                   icon={
                     isInDeliveryZone
@@ -203,16 +244,22 @@ function App() {
                   }}
                 >
                   <Popup>
-                    <b>{store.name}</b>
+                    <b>{store.storeName}</b>
                     <p>{store.address}</p>
                     <a href={store.direction}>Get Direction</a>
+                    <button 
+                      onClick={() => handleDelete(store)} 
+                      style={{ marginTop: '10px', color: 'red' }}
+                    >
+                      Delete Store
+                    </button>
                   </Popup>
                 </Marker>
               );
             })}
             {activeStore && (
               <Circle
-                center={[activeStore.lat, activeStore.lng]}
+                center={[activeStore.latitude, activeStore.longitude]}
                 radius={deliveryZone.radius}
                 pathOptions={{
                   color: "blue",
