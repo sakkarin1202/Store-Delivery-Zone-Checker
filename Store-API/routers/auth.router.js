@@ -14,7 +14,7 @@ router.use((req, res, next) => {
 });
 
 
-//http://localhost:5000/api/v1/auth/signup
+  //http://localhost:5000/api/v1/auth/signup
 router.post(
   "/signup",
   [verifySignUp.checkDuplicateUsernameOrEmail, verifySignUp.checkRolesExisted],

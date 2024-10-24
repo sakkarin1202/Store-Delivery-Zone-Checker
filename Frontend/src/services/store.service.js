@@ -1,5 +1,5 @@
 import api from "./api";
-const STORE_API = import.meta.env.VITE_STORE_API; 
+const STORE_API = import.meta.env.VITE_STORE_API;
 console.log(STORE_API);
 
 // Get all stores
@@ -18,8 +18,9 @@ const insertStore = async (store) => {
 };
 
 // Update store data
-const editStore = async (id, store) => {
-  return await api.put(`${STORE_API}/${id}`, store);
+const editStore = async (id, store, adminId) => {
+  console.log(store);
+  return await api.put(`${STORE_API}/${id}`, store, adminId);
 };
 
 // Delete store data

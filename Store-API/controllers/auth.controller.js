@@ -8,55 +8,63 @@ const { Op } = require("sequelize");
 
 //Register a new user
 exports.signup = async (req, res) => {
-  console.log(req.body); // ดูค่าที่ส่งมา
-
-  const { username, password, email, address, latitude, longitude, roles } = req.body;
+  const { username, password, email, address, latitude, longitude, roles } =
+    req.body;
 
   // ตรวจสอบฟิลด์ที่จำเป็น
   if (!username || !password || !email || !address || !latitude || !longitude) {
-      return res.status(400).send({
-          message: "กรุณาระบุฟิลด์ที่จำเป็นทั้งหมด",
-      });
+    return res.status(400).send({
+      message: "กรุณาระบุฟิลด์ที่จำเป็นทั้งหมด",
+    });
   }
 
   // เตรียมข้อมูลผู้ใช้ โดยไม่ต้องมี userId
   const newUser = {
-      username: username,
-      password: bcrypt.hashSync(password, 8),
-      email: email,
-      address: address,
-      latitude: latitude,
-      longitude: longitude,
+    username: username,
+    password: bcrypt.hashSync(password, 8),
+    email: email,
+    address: address,
+    latitude: latitude,
+    longitude: longitude,
   };
 
   try {
-      // บันทึกผู้ใช้ในฐานข้อมูล
-      const user = await User.create(newUser);
+    // บันทึกผู้ใช้ในฐานข้อมูล
+    const user = await User.create(newUser);
 
-      // ตั้งค่าบทบาทของผู้ใช้
-      if (roles) {
-          const foundRoles = await Role.findAll({
-              where: {
-                  name: {
-                      [Op.or]: roles,
-                  },
-              },
-          });
-          await user.setRoles(foundRoles);
+    // ตรวจสอบว่ามี roles ส่งมาใน request หรือไม่
+    if (roles && roles.length > 0) {
+      // ค้นหา roles ในฐานข้อมูลที่ตรงกับชื่อบทบาทที่ส่งมา
+      const foundRoles = await Role.findAll({
+        where: {
+          name: {
+            [Op.or]: roles, // ตรวจสอบชื่อบทบาทที่ตรงกับ roles
+          },
+        },
+      });
+
+      // ตรวจสอบว่าพบบทบาทที่ส่งมาหรือไม่
+      if (foundRoles.length > 0) {
+        await user.setRoles(foundRoles); // ตั้งค่าบทบาทให้กับผู้ใช้
       } else {
-          // ถ้าไม่มีบทบาท ให้ตั้งค่าบทบาทเริ่มต้นเป็น 1 (user)
-          await user.setRoles([1]);
+        return res.status(400).send({
+          message: "ไม่พบบทบาทที่กำหนดในระบบ",
+        });
       }
+    } else {
+      // ถ้าไม่มีบทบาท ให้ตั้งค่าบทบาทเริ่มต้นเป็น 1 (user)
+      const defaultRole = await Role.findOne({ where: { name: "user" } });
+      await user.setRoles([defaultRole]);
+    }
 
-      return res.send({
-          message: "ผู้ใช้ลงทะเบียนสำเร็จ!",
-      });
+    return res.send({
+      message: "ผู้ใช้ลงทะเบียนสำเร็จ!",
+    });
   } catch (error) {
-      console.error("Error during signup:", error); // แสดงข้อผิดพลาดใน console
-      return res.status(500).send({
-          message:
-              error.message || "เกิดข้อผิดพลาดระหว่างการลงทะเบียนผู้ใช้ใหม่",
-      });
+    console.error("Error during signup:", error); // แสดงข้อผิดพลาดใน console
+    return res.status(500).send({
+      message: error.message || "เกิดข้อผิดพลาดระหว่างการลงทะเบียนผู้ใช้ใหม่",
+    });
   }
 };
 
@@ -67,53 +75,52 @@ exports.signin = async (req, res) => {
   console.log("Received Password:", password);
 
   if (!username || !password) {
-      return res.status(400).send({
-          message: "โปรดระบุชื่อผู้ใช้และรหัสผ่าน",
-      });
+    return res.status(400).send({
+      message: "โปรดระบุชื่อผู้ใช้และรหัสผ่าน",
+    });
   }
 
   try {
-      // ค้นหาผู้ใช้ในฐานข้อมูล
-      const user = await User.findOne({ where: { username: username } });
+    // ค้นหาผู้ใช้ในฐานข้อมูล
+    const user = await User.findOne({ where: { username: username } });
 
-      // ตรวจสอบว่าพบผู้ใช้หรือไม่
-      if (!user) {
-          return res.status(404).send({ message: "ไม่พบผู้ใช้" });
-      }
+    // ตรวจสอบว่าพบผู้ใช้หรือไม่
+    if (!user) {
+      return res.status(404).send({ message: "ไม่พบผู้ใช้" });
+    }
 
-      // ตรวจสอบรหัสผ่าน
-      const passwordIsValid = bcrypt.compareSync(password, user.password);
-      if (!passwordIsValid) {
-          return res.status(401).send({
-              accessToken: null,
-              message: "รหัสผ่านไม่ถูกต้อง",
-          });
-      }
-
-      // สร้าง token
-      const token = jwt.sign({ id: user.userId }, config.secret, {
-          expiresIn: 86400, // 1 วัน
+    // ตรวจสอบรหัสผ่าน
+    const passwordIsValid = bcrypt.compareSync(password, user.password);
+    if (!passwordIsValid) {
+      return res.status(401).send({
+        accessToken: null,
+        message: "รหัสผ่านไม่ถูกต้อง",
       });
+    }
 
-      // ดึงบทบาทของผู้ใช้
-      const authorities = [];
-      const roles = await user.getRoles();
-      roles.forEach(role => {
-          authorities.push("ROLES_" + role.name.toUpperCase());
-      });
+    // สร้าง token
+    const token = jwt.sign({ id: user.userId }, config.secret, {
+      expiresIn: 86400, // 1 วัน
+    });
 
-      // ส่งข้อมูลผู้ใช้และ token
-      return res.status(200).send({
-          id: user.userId,
-          username: user.username,
-          email: user.email,
-          roles: authorities,
-          accessToken: token,
-      });
+    // ดึงบทบาทของผู้ใช้
+    const authorities = [];
+    const roles = await user.getRoles();
+    roles.forEach((role) => {
+      authorities.push("ROLES_" + role.name.toUpperCase());
+    });
 
+    // ส่งข้อมูลผู้ใช้และ token
+    return res.status(200).send({
+      id: user.userId,
+      username: user.username,
+      email: user.email,
+      roles: authorities,
+      accessToken: token,
+    });
   } catch (error) {
-      return res.status(500).send({
-          message: error.message || "เกิดข้อผิดพลาดระหว่างการเข้าสู่ระบบ",
-      });
+    return res.status(500).send({
+      message: error.message || "เกิดข้อผิดพลาดระหว่างการเข้าสู่ระบบ",
+    });
   }
 };

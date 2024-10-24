@@ -2,20 +2,27 @@ const Store = require("../models/store.model");
 
 // Create a new store
 exports.createStore = async (req, res) => {
-  const {  storeName, address, latitude, longitude, deliveryRadius,adminId } = req.body;
- console.log(req.body);
- 
-  if (  !storeName || !address || latitude === undefined || longitude === undefined || deliveryRadius === undefined) {
+  const { storeName, address, latitude, longitude, deliveryRadius, adminId } =
+    req.body;
+  console.log(req.body);
+
+  if (
+    !storeName ||
+    !address ||
+    latitude === undefined ||
+    longitude === undefined ||
+    deliveryRadius === undefined
+  ) {
     return res.status(400).send({
-      message: "StoreName, Address, Latitude, Longitude, or DeliveryRadius cannot be empty",
+      message:
+        "StoreName, Address, Latitude, Longitude, or DeliveryRadius cannot be empty",
     });
   }
 
- 
-  const token = req.headers.authorization?.split(" ")[1]; 
+  const token = req.headers.authorization?.split(" ")[1];
   if (token) {
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET); 
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
       adminId = decoded.id;
     } catch (error) {
       return res.status(401).send({ message: "Unauthorized access" });
@@ -46,12 +53,15 @@ exports.createStore = async (req, res) => {
       })
       .catch((error) => {
         res.status(500).send({
-          message: error.message || "Something error occurred while creating the store.",
+          message:
+            error.message ||
+            "Something error occurred while creating the store.",
         });
       });
   } catch (error) {
     res.status(500).send({
-      message: error.message || "Something error occurred while creating the store.",
+      message:
+        error.message || "Something error occurred while creating the store.",
     });
   }
 };
@@ -63,7 +73,8 @@ exports.getAllStores = async (req, res) => {
     res.send(stores);
   } catch (error) {
     res.status(500).send({
-      message: error.message || "Something error occurred while fetching the stores.",
+      message:
+        error.message || "Something error occurred while fetching the stores.",
     });
   }
 };
@@ -79,7 +90,8 @@ exports.getStoreById = async (req, res) => {
     res.send(store);
   } catch (error) {
     res.status(500).send({
-      message: error.message || "Something error occurred while fetching the store.",
+      message:
+        error.message || "Something error occurred while fetching the store.",
     });
   }
 };
@@ -87,18 +99,22 @@ exports.getStoreById = async (req, res) => {
 // Update store
 exports.updateStore = async (req, res) => {
   const id = req.params.id;
+  const adminId = req.userId;
   try {
     const [updated] = await Store.update(req.body, {
-      where: { id: id },
+      where: { id: id, adminId: adminId },
     });
 
     if (updated) {
       return res.send({ message: "Store was updated successfully" });
     }
-    res.status(404).send({ message: "Store not found" });
+    res
+      .status(404)
+      .send({ message: "You don't have the right to edit this store." });
   } catch (error) {
     res.status(500).send({
-      message: error.message || "Something error occurred while updating the store.",
+      message:
+        error.message || "Something error occurred while updating the store.",
     });
   }
 };
