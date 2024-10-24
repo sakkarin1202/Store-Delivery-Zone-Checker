@@ -8,9 +8,10 @@ const db = require("./models/");
 const role = db.Role;
 const cors = require("cors");
 const stores = require("./store");
+const frontend_url = process.env.frontend_url || "http://localhost:5173";
 
 const corsOption = {
-  origin: "http://localhost:5173",
+  origin: frontend_url,
 };
 
 //dev mode
