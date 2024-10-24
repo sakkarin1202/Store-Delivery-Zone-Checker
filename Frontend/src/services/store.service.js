@@ -24,8 +24,10 @@ const editStore = async (id, store, adminId) => {
 };
 
 // Delete store data
-const deleteStore = async (id) => {
-  return await api.delete(`${STORE_API}/${id}`);
+const deleteStore = async (id, adminId) => {
+  console.log(id);
+
+  return await api.delete(`${STORE_API}/${id}`, adminId);
 };
 
 // Exporting store service functions

@@ -10,7 +10,7 @@ import {
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import Swal from "sweetalert2";
-import StoreService from "./services/store.service"; 
+import StoreService from "./services/store.service";
 import Seven from "./assets/24.png";
 import Seven2 from "./assets/24close.png";
 import "./App.css";
@@ -18,12 +18,11 @@ import { useAuthContext } from "./context/AuthContext";
 import Navbar from "./components/Navbar";
 import { useNavigate } from "react-router-dom";
 
-
 function App() {
   const center = [13.838514948417762, 100.02530203017818];
   const [stores, setStores] = useState([]);
   const [myLocation, setMyLocation] = useState({ latitude: "", longitude: "" });
-  const { user } = useAuthContext(); 
+  const { user } = useAuthContext();
   const [deliveryZone, setDeliveryZone] = useState({
     latitude: "",
     longitude: "",
@@ -82,27 +81,27 @@ function App() {
           const { latitude, longitude } = position.coords;
           setMyLocation({ latitude, longitude });
           Swal.fire({
-            title: 'Location Found',
+            title: "Location Found",
             text: `Latitude: ${latitude}, Longitude: ${longitude}`,
-            icon: 'success',
-            confirmButtonText: 'OK',
+            icon: "success",
+            confirmButtonText: "OK",
           });
         },
         (error) => {
           Swal.fire({
-            title: 'Error',
-            text: 'Unable to retrieve your location. Please allow location access.',
-            icon: 'error',
-            confirmButtonText: 'OK',
+            title: "Error",
+            text: "Unable to retrieve your location. Please allow location access.",
+            icon: "error",
+            confirmButtonText: "OK",
           });
         }
       );
     } else {
       Swal.fire({
-        title: 'Error',
-        text: 'Geolocation is not supported by your browser.',
-        icon: 'error',
-        confirmButtonText: 'OK',
+        title: "Error",
+        text: "Geolocation is not supported by your browser.",
+        icon: "error",
+        confirmButtonText: "OK",
       });
     }
   };
@@ -164,7 +163,7 @@ function App() {
     navigate(`/edit/${storeId}`);
   };
 
-  const handleDelete = (store) => {
+  const handleDelete = (id) => {
     Swal.fire({
       title: "Are you sure?",
       text: "You won't be able to revert this!",
@@ -176,11 +175,15 @@ function App() {
     }).then(async (result) => {
       if (result.isConfirmed) {
         try {
-          await StoreService.deleteStore(store.id); // Assuming deleteStore is defined in StoreService
-          setStores((prevStores) => prevStores.filter((s) => s.id !== store.id));
+          await StoreService.deleteStore(id); // Assuming deleteStore is defined in StoreService
+          setStores((prevStores) => prevStores.filter((s) => s.id !== id));
           Swal.fire("Deleted!", "The store has been deleted.", "success");
         } catch (error) {
-          Swal.fire("Error!", "There was a problem deleting the store.", "error");
+          Swal.fire(
+            "Error!",
+            "There was a problem deleting the store.",
+            "error"
+          );
         }
       }
     });
@@ -196,8 +199,8 @@ function App() {
     iconSize: [35, 35],
   });
 
-  const { logout, isAuthenticated, userRoles } = useAuthContext(); 
-  
+  const { logout, isAuthenticated, userRoles } = useAuthContext();
+
   const handleLogout = () => {
     logout();
     Swal.fire({
@@ -224,7 +227,9 @@ function App() {
         {isAuthenticated && isAdmin && (
           <div className="admin-buttons flex flex-col md:flex-row md:justify-between mb-4 w-full">
             <button
-              onClick={() => {/* Function to handle Add */}}
+              onClick={() => {
+                /* Function to handle Add */
+              }}
               className="bg-blue-500 text-white p-2 rounded-md hover:bg-blue-700 w-full md:w-auto mb-2 md:mb-0"
             >
               Add
@@ -251,7 +256,8 @@ function App() {
             <Marker
               position={[myLocation.latitude, myLocation.longitude]}
               icon={L.icon({
-                iconUrl: "https://cdn-icons-png.flaticon.com/128/6924/6924565.png",
+                iconUrl:
+                  "https://cdn-icons-png.flaticon.com/128/6924/6924565.png",
                 iconSize: [35, 35],
               })}
             >
@@ -266,15 +272,13 @@ function App() {
               store.longitude
             );
             const isInDeliveryZone = distance <= deliveryZone.radius;
-  
+
             return (
               <Marker
                 position={[store.latitude, store.longitude]}
                 key={store.id}
                 icon={
-                  isInDeliveryZone
-                    ? inDeliveryZoneIcon
-                    : outOfDeliveryZoneIcon
+                  isInDeliveryZone ? inDeliveryZoneIcon : outOfDeliveryZoneIcon
                 }
                 eventHandlers={{
                   click: () => handleStoreCheck(store),
@@ -286,8 +290,8 @@ function App() {
                   <>Address: {store.address}</>
                   <p>Latitude: {store.latitude}</p>
                   <p>Longitude: {store.longitude}</p>
-  
-                  {user && user.roles.includes('ROLES_ADMIN') && (
+
+                  {user && user.roles.includes("ROLES_ADMIN") && (
                     <div className="flex flex-col gap-2">
                       <button
                         onClick={() => handleEdit(store.id)}
@@ -296,7 +300,7 @@ function App() {
                         Edit Store
                       </button>
                       <button
-                        onClick={() => handleDelete(store)}
+                        onClick={() => handleDelete(store.id)}
                         className="text-red-600 hover:underline"
                       >
                         Delete Store
@@ -307,16 +311,20 @@ function App() {
               </Marker>
             );
           })}
-  
+
           {/* แสดงวงกลมสำหรับร้านค้าที่ถูกเลือก */}
           {activeStore && (
             <Circle
               center={[activeStore.latitude, activeStore.longitude]}
               radius={deliveryZone.radius}
-              pathOptions={{ color: "blue", fillColor: "blue", fillOpacity: 0.1 }}
+              pathOptions={{
+                color: "blue",
+                fillColor: "blue",
+                fillOpacity: 0.1,
+              }}
             />
           )}
-  
+
           <LocationMap />
         </MapContainer>
       </div>

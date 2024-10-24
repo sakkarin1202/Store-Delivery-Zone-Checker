@@ -122,15 +122,21 @@ exports.updateStore = async (req, res) => {
 // Delete store
 exports.deleteStore = async (req, res) => {
   const id = req.params.id;
+  const adminId = req.userId;
+  console.log(req.body);
+
   try {
     const deleted = await Store.destroy({
-      where: { id: id },
+      where: { id: id, adminId: adminId },
     });
+    console.log(deleted);
 
     if (deleted) {
       return res.send({ message: "Store was deleted successfully" });
     }
-    res.status(404).send({ message: "Store not found" });
+    res
+      .status(404)
+      .send({ message: "You don't have the right to Delete this store." });
   } catch (error) {
     res.status(500).send({
       message: "Error deleting store with id=" + id,
