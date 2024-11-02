@@ -13,7 +13,7 @@ const AddStore = () => {
     longitude: "",
     deliveryRadius: "",
   });
-s
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setStore({ ...store, [name]: value });
