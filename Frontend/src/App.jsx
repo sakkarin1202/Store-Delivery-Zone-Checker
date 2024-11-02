@@ -26,13 +26,13 @@ function App() {
   const [deliveryZone, setDeliveryZone] = useState({
     latitude: "",
     longitude: "",
-    radius: 1000,
+    radius: 0,
   });
   const [activeStore, setActiveStore] = useState(null);
   const navigate = useNavigate();
 
   const calculateDistance = (lat1, lng1, lat2, lng2) => {
-    const R = 6371e3; // Earth radius in meters
+    const R = 6371e3; 
     const phi1 = (lat1 * Math.PI) / 180;
     const phi2 = (lat2 * Math.PI) / 180;
 
@@ -153,10 +153,17 @@ function App() {
   const handleStoreCheck = (store) => {
     if (activeStore && activeStore.id === store.id) {
       setActiveStore(null);
+      setDeliveryZone((prev) => ({ ...prev, radius: 0 })); // รีเซ็ตค่าเมื่อยกเลิกการเลือก
     } else {
       setActiveStore(store);
+      setDeliveryZone({
+        latitude: store.latitude,
+        longitude: store.longitude,
+        radius: store.deliveryRadius * 0.5, 
+      });
     }
   };
+  
 
   const handleEdit = (storeId) => {
     // นำทางไปยังหน้าการแก้ไขของร้านค้านั้น
@@ -226,6 +233,7 @@ function App() {
       <div className="mapContainer flex flex-col items-center px-4">
         {isAuthenticated && isAdmin && (
           <div className="admin-buttons flex flex-col md:flex-row md:justify-between mb-4 w-full">
+          
             <button
               onClick={() => {
                 /* Function to handle Add */
@@ -291,22 +299,23 @@ function App() {
                   <p>Latitude: {store.latitude}</p>
                   <p>Longitude: {store.longitude}</p>
 
-                  {user && user.roles.includes("ROLES_ADMIN") && (
-                    <div className="flex flex-col gap-2">
-                      <button
-                        onClick={() => handleEdit(store.id)}
-                        className="text-blue-600 hover:underline"
-                      >
-                        Edit Store
-                      </button>
-                      <button
-                        onClick={() => handleDelete(store.id)}
-                        className="text-red-600 hover:underline"
-                      >
-                        Delete Store
-                      </button>
-                    </div>
-                  )}
+                  {user && user.roles.includes("ROLES_ADMIN") && store.adminId === user.id && (
+  <div className="flex flex-col gap-2">
+    <button
+      onClick={() => handleEdit(store.id)}
+      className="text-blue-600 hover:underline"
+    >
+      Edit Store
+    </button>
+    <button
+      onClick={() => handleDelete(store.id)}
+      className="text-red-600 hover:underline"
+    >
+      Delete Store
+    </button>
+  </div>
+)}
+
                 </Popup>
               </Marker>
             );

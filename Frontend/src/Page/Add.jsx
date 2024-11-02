@@ -13,7 +13,7 @@ const AddStore = () => {
     longitude: "",
     deliveryRadius: "",
   });
-
+s
   const handleChange = (e) => {
     const { name, value } = e.target;
     setStore({ ...store, [name]: value });
@@ -21,21 +21,22 @@ const AddStore = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+  
     // ดึง adminId จาก localStorage
-    const adminId = JSON.parse(localStorage.getItem("user"))?.id; 
-
+    const adminId = JSON.parse(localStorage.getItem("user"))?.id;
+  
     const storeData = {
       ...store,
       adminId: adminId,
       latitude: parseFloat(store.latitude),
       longitude: parseFloat(store.longitude),
+      deliveryRadius: parseFloat(store.deliveryRadius) * 1000, 
     };
-
+  
     try {
-      const response = await StoreService.insertStore(storeData); 
+      const response = await StoreService.insertStore(storeData);
       console.log(response.data);
-      
+  
       if (response.status === 200) {
         Swal.fire({
           title: "Add Store",
@@ -58,6 +59,7 @@ const AddStore = () => {
       });
     }
   };
+  
 
   return (
     <div className="bg-gray-200 min-h-screen flex flex-col items-center p-4">
